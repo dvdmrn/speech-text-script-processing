@@ -1,0 +1,4 @@
+SpeechRecognition
+wave
+pyaudio
+google-api-python-client
