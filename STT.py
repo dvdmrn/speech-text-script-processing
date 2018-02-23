@@ -4,13 +4,12 @@ from os import path, listdir
 from pprint import pprint
 from tqdm import tqdm
 import csv
+import json
 import math as m
+import transcriptmatch
 
-
-files = listdir("segments")
 fps = 30 # for timecode generation
-files.sort()
-CREDENTIALS = r"""YOUR_JSON_API_FILE_HERE"""
+# CREDENTIALS = r"""YOUR_JSON_API_FILE_HERE"""
 RESULTS = ""
 fieldnames = ["t","word","instruction"]
 
@@ -20,7 +19,7 @@ title = " _\n//\ \nV  \        A V O C A D O    V I D E O\n \  \ \n  \,'.`-.\n  
 r = sr.Recognizer()
 
 
-def call_papa_google(file,timeOffset):
+def call_papa_google(file,timeOffset,CREDENTIALS):
     data = []
     with sr.AudioFile(file) as source:
         audio = r.record(source)  # read the entire audio file
@@ -41,12 +40,12 @@ def call_papa_google(file,timeOffset):
         print("Could not request results from Google Cloud Speech service; {0}".format(e))
 
 def initCSV():
-    with open("transcript.csv","w") as csvf:
+    with open("transcript_nodirections.csv","w") as csvf:
         writer = csv.DictWriter(csvf,fieldnames=fieldnames)
         writer.writeheader()
 
 def appendRows(rows):
-    with open("transcript.csv","a") as csvf:
+    with open("transcript_nodirections.csv","a") as csvf:
         writer = csv.DictWriter(csvf, fieldnames=fieldnames)
         for r in rows:
             writer.writerow(r)
@@ -63,17 +62,24 @@ def totimecode(raw_seconds):
     return formatStr
 
 def main():
+    files = listdir("segments")
+    files.sort()
+
+    CREDENTIALS = json.load(open("api_key/transcription-63a666052caa.json"))
+    CREDENTIALS = json.dumps(CREDENTIALS)
+
     print(title)
     print("=================\nProcessing files...")
     timeOffset = 0
+
     initCSV()
     for f in tqdm(files):
         AUDIO_FILE = path.join("segments", f)
-        toWrite = call_papa_google(AUDIO_FILE,timeOffset)
+        toWrite = call_papa_google(AUDIO_FILE,timeOffset,CREDENTIALS)
         appendRows(toWrite)
         timeOffset += 10
+    print("✓  finished transcribing")
+    # transcriptmatch.main()
 
 
 
-main()
-# print totimecode(1.9)

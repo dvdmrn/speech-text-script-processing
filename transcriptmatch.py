@@ -3,15 +3,18 @@
 import re
 from pprint import pprint
 import csv 
+import time
+
 
 SCRIPT_PATH = "script.txt"
-CSV_PATH = "transcript.csv"
+CSV_PATH = "transcript_nodirections.csv"
 TRANSCRIPTION = ""
 keywords = []
 
 f = open("script.txt")
 text = f.read()
 text = text.lower()
+text = text.replace("\n","")
 txtList = text.split(" ")
 
 def get_directions(corpus):
@@ -21,20 +24,23 @@ def get_directions(corpus):
     # direction_pattern = re.compile("© \[[\w\s.,/#!$%^&*;:=\-_`~()'’]+]")
 
     directions = direction_pattern.findall(corpus) 
-    print("found directions: -------------------------")
-    pprint(directions)
+    # print("found directions: -------------------------")
+    print("found ",len(directions),"directions")
     return directions
 
+def get_stuff_in_ptys(exp):
+    pty = re.compile(r"<(.*?)>")
+    stuff = pty.findall(exp)
+    return int(stuff[0])
+
 def prep_corpus(purgeList, corpus):
-    print("IN: ",corpus)
-    print("purge list:",purgeList)
+    # print("IN: ",corpus)
+    # print("purge list:",purgeList)
     new_corpus = corpus
     for i in range(0,len(purgeList)):
-        print("\n\nremoving: ","["+purgeList[i]+"] for:"+str(i))
         new_corpus = new_corpus.replace("["+purgeList[i]+"]","<"+str(i)+">",1)
-        pprint(new_corpus)
     new_corpus = new_corpus.replace("© ","")
-    print("OUT: ",new_corpus)
+    # print("OUT: ",new_corpus)
     return new_corpus
 
 def remove_traces(corpus):
@@ -72,41 +78,6 @@ def getCSV():
         return transcript
 
 
-# def collocation_search(transcript,keywords,script):
-#     sl = script.split(" ")
-#     # sl = [i for i in isl if i != ""]
-#     # pprint(sl)
-#     for kw in keywords:
-#         for i in range(0,len(sl)):
-#             degree = collocation_degree(kw,script,transcript,i)
-#             print(degree)
-#         print(degree)
-#         # print(kw["i"],sl[max(0,kw["i"])])
-
-# def collocation_degree(kw, script, transcript, iOffset):
-#     # print("ioffset: ",iOffset)
-#     s0 = script[max(0,iOffset-2)]
-#     s1 = script[max(0,iOffset-1)]
-
-#     sroot = script[max(0,iOffset)]
-#     s2 = script[min(len(script)-1,iOffset+1)]
-#     s3 = script[min(len(script)-1,iOffset+2)]
-
-#     t0 = transcript[max(0,iOffset-2)]
-#     t1 = transcript[max(0,iOffset-1)]
-#     troot = transcript[max(0,iOffset)]
-#     t2 = transcript[min(len(transcript)-1,iOffset+1)]
-#     t3 = transcript[min(len(transcript)-1,iOffset+2)]
-
-#     matchDegree = 0
-#     matchDegree += 1 if s0==t0 else matchDegree   
-#     matchDegree += 1 if s1==t1 else matchDegree   
-#     matchDegree += 1 if sroot==troot else matchDegree   
-#     matchDegree += 1 if s2==t2 else matchDegree   
-#     matchDegree += 1 if s3==t3 else matchDegree   
-
-#     return matchDegree
-
 
 def get_ngrams(dirs,script):
     """
@@ -114,15 +85,16 @@ def get_ngrams(dirs,script):
     """
     ngrams = [] # list of dicts
     script_words = script.split(" ")
-    pprint(script_words)
+    # pprint(script_words)
     for i in range(0,len(script_words)-len(dirs)):
         if "<" and ">" in script_words[i]:
-            dirIndex = int(script_words[i][1:-1])
+            dirIndex = get_stuff_in_ptys(script_words[i])
+            # print(script_words[i],dirIndex)
             del script_words[i]
             # i += 1
             ngram = get_ngram_forward(i,script_words)
             ngrams.append({"ngram":ngram,"dir":dirs[dirIndex]})
-    pprint(ngrams)
+    # pprint(ngrams)
     return ngrams
 
 # def get_ngram_symmetrical(index,corpus):
@@ -210,12 +182,11 @@ def match_degree(ngram,tosearch):
         degrees.append((matchDegree,i))
         matchDegree = 0
     best_candidate = max(degrees)
-    print(best_candidate)
-    print(tosearch[best_candidate[1]])
     return best_candidate
 
 def get_matches(ngrams,transcript,directions):
     inst_candidates = []
+    print("finding best candidates for screen directions...")
     for ngram in ngrams:
         instruction_candidate = match_degree(ngram["ngram"],transcript)
         inst_candidates.append(instruction_candidate)
@@ -226,7 +197,7 @@ def get_matches(ngrams,transcript,directions):
     return transcript
 
 def writeCSV(transcript):
-    with open('instructions.csv', 'w') as csvfile:
+    with open('transcript.csv', 'w') as csvfile:
         fieldnames = ["t","word","instruction"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -235,12 +206,15 @@ def writeCSV(transcript):
 
 
 def main():
+    print("🔎 Matching transcription with script instructions...")
+    time.sleep(1)
     directions = get_directions(text)
     preppedCorpus = prep_corpus(directions,text)
     ngrams = get_ngrams(directions,preppedCorpus)
     transcript = getCSV()
     populatedTranscript = get_matches(ngrams,transcript,directions)
     writeCSV(populatedTranscript)
+    print("😂 complete! written file as transcript.csv")
     # match_degree(ngrams[0]["ngram"],transcript,dire)
 
     # kwds = get_keywords(preppedCorpus, directions)
@@ -249,5 +223,3 @@ def main():
     # parsableScript = remove_traces(preppedCorpus)
   
     # collocation_search(transcript,kwds,parsableScript)
-
-main()
