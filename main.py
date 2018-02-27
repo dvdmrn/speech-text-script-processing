@@ -28,7 +28,7 @@ def main():
         if ".wav" in sys.argv[1]:
             check_required_files()
             print("Segmentizing",sys.argv[1])
-            subprocess.call(['ffmpeg -i $1 -f segment -segment_time 10 -c copy segments/$1_out%03d.wav',sys.argv[1]])
+            subprocess.call(['sh segmentize.sh',sys.argv[1]],shell=True)
             STT.main()
             transcriptmatch.main()
 
