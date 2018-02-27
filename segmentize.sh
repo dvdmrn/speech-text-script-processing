@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ ! -d "/path/to/dir" ] 
+if [ ! -d "segments" ] 
 then
     echo creating segments folder
     mkdir segments
