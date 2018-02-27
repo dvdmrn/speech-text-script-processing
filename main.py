@@ -28,7 +28,7 @@ def main():
         if ".wav" in sys.argv[1]:
             check_required_files()
             print("Segmentizing",sys.argv[1])
-            subprocess.call(['./segmentize',sys.argv[1]])
+            subprocess.call(['sh segmentize.sh',sys.argv[1]])
             STT.main()
             transcriptmatch.main()
 
